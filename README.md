@@ -44,7 +44,7 @@ java -version
 .\mvnw.cmd test
 ```
 
-## Como testar a api
+## Como testar as chamadas da API
 
 Nas chamadas `POST`, selecione o corpo como **JSON** (raw).
 
