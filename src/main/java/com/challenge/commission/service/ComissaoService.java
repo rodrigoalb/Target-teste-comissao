@@ -3,6 +3,8 @@ package com.challenge.commission.service;
 import com.challenge.commission.dto.ComissaoVendaResponse;
 import com.challenge.commission.dto.ComissaoVendedorResponse;
 import com.challenge.commission.dto.Venda;
+import com.challenge.commission.exception.VendedorNaoEncontradoException;
+import com.challenge.commission.repository.VendaRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,6 +22,34 @@ public class ComissaoService {
     private static final BigDecimal PERCENTUAL_BAIXO = new BigDecimal("0.01");
     private static final BigDecimal PERCENTUAL_ALTO = new BigDecimal("0.05");
 
+    private final VendaRepository vendaRepository;
+
+    public ComissaoService(VendaRepository vendaRepository) {
+        this.vendaRepository = vendaRepository;
+    }
+
+    /**
+     * Calcula a comissão de todos os vendedores considerando todas as vendas
+     * registradas em memória (arquivo inicial + vendas adicionadas via API).
+     */
+    public List<ComissaoVendedorResponse> calcularTodas() {
+        return calcular(vendaRepository.listar());
+    }
+
+    /**
+     * Calcula a comissão de um único vendedor a partir das vendas em memória.
+     */
+    public ComissaoVendedorResponse calcularPorVendedor(String vendedor) {
+        List<Venda> vendas = vendaRepository.listarPorVendedor(vendedor);
+        if (vendas.isEmpty()) {
+            throw new VendedorNaoEncontradoException(vendedor);
+        }
+        return montarResumo(vendas.get(0).getVendedor(), vendas);
+    }
+
+    /**
+     * Calcula a comissão sobre a lista informada, sem consultar nem alterar o armazenamento.
+     */
     public List<ComissaoVendedorResponse> calcular(List<Venda> vendas) {
         Map<String, List<Venda>> porVendedor = new LinkedHashMap<>();
         for (Venda venda : vendas) {
