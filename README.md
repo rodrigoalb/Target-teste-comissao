@@ -44,7 +44,7 @@ java -version
 .\mvnw.cmd test
 ```
 
-## Como testar (Postman ou Insomnia)
+## Como testar a api
 
 Nas chamadas `POST`, selecione o corpo como **JSON** (raw).
 
