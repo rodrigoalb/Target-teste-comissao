@@ -1,10 +1,10 @@
 # sales-commission
 
-API Spring Boot que registra as vendas do time comercial e calcula a comissão de cada vendedor.
+Aplicação que lê as vendas do time comercial e calcula a comissão de cada vendedor.
 
-As vendas ficam **em memória**: na inicialização a API carrega as vendas de `src/main/resources/vendas.json` e, a partir daí, novas vendas podem ser adicionadas via `POST /api/vendas`. O cálculo de comissão (`GET /api/comissoes`) sempre considera todas as vendas registradas (arquivo + as que foram adicionadas). Ao reiniciar a aplicação, volta-se ao conteúdo do arquivo.
+Ao iniciar, a aplicação já carrega as vendas do arquivo `src/main/resources/vendas.json`. Você também pode adicionar novas vendas pela API, e elas passam a entrar no cálculo da comissão. Os dados ficam só em memória: ao reiniciar, volta ao conteúdo do arquivo.
 
-## Regras
+## Regras de comissão
 
 | Valor da venda | Comissão |
 | --- | --- |
@@ -12,24 +12,22 @@ As vendas ficam **em memória**: na inicialização a API carrega as vendas de `
 | De R$ 100,00 até R$ 499,99 | 1% |
 | A partir de R$ 500,00 | 5% |
 
-- A comissão é calculada venda a venda e depois somada por vendedor.
-- Os valores usam `BigDecimal` com duas casas decimais e arredondamento `HALF_UP`.
-- Uma venda só é aceita se `vendedor` estiver preenchido e `valor` for maior que zero.
+A comissão é calculada venda a venda e depois somada por vendedor. Os valores são mostrados com duas casas decimais.
 
 ## Pré-requisitos
 
-- Java 21 instalado (`JAVA_HOME` apontando para o JDK 21).
-- Não é preciso instalar Maven: o Maven Wrapper (`mvnw.cmd`) baixa a versão correta automaticamente.
+- Java 21 instalado.
+- Não precisa instalar Maven: o projeto já vem com tudo que precisa para rodar.
 
 ## Como executar
 
-Execute esse comando no terminal, dentro da pasta do projeto:
+Abra o terminal na pasta do projeto e rode:
 
 ```bash
 .\mvnw.cmd spring-boot:run
 ```
 
-A API sobe na porta **8081**.
+A aplicação sobe em `http://localhost:8081`.
 
 Caso já tenha o java 21 instalado no seu computador, execute esse comando para trocar a versão e executar a aplicação
 
@@ -46,31 +44,21 @@ java -version
 .\mvnw.cmd test
 ```
 
-Os testes cobrem as faixas de comissão, o agrupamento por vendedor, o armazenamento em memória e o fluxo completo da API (adicionar venda e vê-la refletida na comissão).
+## Como testar (Postman ou Insomnia)
 
-## Endpoints
+Nas chamadas `POST`, selecione o corpo como **JSON** (raw).
 
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| `GET` | `/api/vendas` | Lista todas as vendas registradas em memória |
-| `POST` | `/api/vendas` | Adiciona vendas em memória (passam a entrar no cálculo de comissão) |
-| `GET` | `/api/comissoes` | Comissão de todos os vendedores, considerando todas as vendas em memória |
-| `GET` | `/api/comissoes/{vendedor}` | Comissão de um vendedor específico |
-| `POST` | `/api/comissoes` | Simulação: calcula a comissão das vendas enviadas sem salvar nada |
+Sugestão de ordem:
 
-Fluxo sugerido para testar no Postman:
+1. **GET** `http://localhost:8081/api/comissoes` para ver a comissão com as vendas do arquivo.
+2. **POST** `http://localhost:8081/api/vendas` para adicionar novas vendas.
+3. **GET** `http://localhost:8081/api/comissoes` de novo para ver as novas vendas no resultado.
 
-1. `GET /api/comissoes` para ver o resultado com as vendas do arquivo.
-2. `POST /api/vendas` com novas vendas.
-3. `GET /api/comissoes` (ou `GET /api/comissoes/{vendedor}`) para ver as novas vendas refletidas no cálculo.
+### Listar vendas
 
-Todas as requisições com corpo usam o header `Content-Type: application/json`.
+**GET** `http://localhost:8081/api/vendas`
 
-### GET /api/vendas
-
-Retorna a lista de vendas registradas (arquivo + adicionadas).
-
-Resposta `200 OK`:
+Resposta:
 
 ```json
 [
@@ -80,11 +68,11 @@ Resposta `200 OK`:
 ]
 ```
 
-### POST /api/vendas
+### Adicionar vendas
 
-Adiciona uma ou mais vendas ao armazenamento em memória.
+**POST** `http://localhost:8081/api/vendas`
 
-Request:
+Corpo:
 
 ```json
 {
@@ -95,7 +83,7 @@ Request:
 }
 ```
 
-Resposta `201 Created` (apenas as vendas que foram adicionadas nesta requisição):
+Resposta (201 Created) com as vendas que foram adicionadas:
 
 ```json
 [
@@ -104,7 +92,7 @@ Resposta `201 Created` (apenas as vendas que foram adicionadas nesta requisiçã
 ]
 ```
 
-Resposta `400 Bad Request` quando algum campo é inválido (vendedor vazio, valor ausente ou menor/igual a zero, lista `vendas` vazia):
+Se algum campo estiver errado (vendedor vazio, valor zerado ou negativo, lista vazia), a resposta é 400 Bad Request:
 
 ```json
 {
@@ -116,11 +104,11 @@ Resposta `400 Bad Request` quando algum campo é inválido (vendedor vazio, valo
 }
 ```
 
-### GET /api/comissoes
+### Comissão de todos os vendedores
 
-Calcula a comissão de todos os vendedores sobre todas as vendas em memória.
+**GET** `http://localhost:8081/api/comissoes`
 
-Resposta `200 OK` (um item por vendedor; exemplo resumido):
+Resposta (um item por vendedor):
 
 ```json
 [
@@ -137,11 +125,13 @@ Resposta `200 OK` (um item por vendedor; exemplo resumido):
 ]
 ```
 
-### GET /api/comissoes/{vendedor}
+### Comissão de um vendedor
 
-Mesmo cálculo, mas apenas para o vendedor informado (a busca não diferencia maiúsculas de minúsculas). Exemplo: `GET /api/comissoes/Ana Lima`.
+**GET** `http://localhost:8081/api/comissoes/Ana Lima`
 
-Resposta `200 OK`:
+Não diferencia maiúsculas de minúsculas.
+
+Resposta:
 
 ```json
 {
@@ -158,17 +148,19 @@ Resposta `200 OK`:
 }
 ```
 
-Resposta `404 Not Found` se o vendedor não tiver vendas registradas:
+Se o vendedor não existir, a resposta é 404 Not Found:
 
 ```json
 { "erro": "Vendedor não encontrado: Zeca" }
 ```
 
-### POST /api/comissoes (simulação)
+### Simular comissão sem salvar
 
-Calcula a comissão apenas das vendas enviadas no corpo. **Nada é salvo**: as vendas enviadas aqui não aparecem em `GET /api/vendas` nem em `GET /api/comissoes`. Útil para testar as faixas de comissão rapidamente. Para adicionar vendas de fato, use `POST /api/vendas`.
+**POST** `http://localhost:8081/api/comissoes`
 
-Request:
+Calcula a comissão só das vendas enviadas, sem guardar nada. Serve para testar as faixas rapidamente. Para adicionar vendas de verdade, use **POST** `http://localhost:8081/api/vendas`.
+
+Corpo:
 
 ```json
 {
@@ -179,7 +171,7 @@ Request:
 }
 ```
 
-Resposta `200 OK`:
+Resposta:
 
 ```json
 [
@@ -194,14 +186,4 @@ Resposta `200 OK`:
     ]
   }
 ]
-```
-
-### Exemplo com curl
-
-```bash
-curl http://localhost:8081/api/comissoes
-
-curl -X POST http://localhost:8081/api/vendas ^
-  -H "Content-Type: application/json" ^
-  -d "{\"vendas\":[{\"vendedor\":\"Pedro Santos\",\"valor\":750.00}]}"
 ```
